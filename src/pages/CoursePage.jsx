@@ -120,8 +120,6 @@ const CoursePage = () => {
     setCourseForm({
       course_id: course.course_id,
       title: course.title,
-      // --- THIS IS NOW CORRECTED ---
-      // Reads 'duration' from the backend GET route
       duration: course.duration 
     });
     setShowCourseModal(true);
@@ -139,6 +137,7 @@ const CoursePage = () => {
       time_slot_id: section.time_slot_id,
       instructor_id: section.instructor_id
     });
+    setShowSectionModal(true); // Add this line to show the modal
   };
 
   const handleCloseCourseModal = () => {
@@ -230,7 +229,6 @@ const CoursePage = () => {
                     <tr key={course.course_id}>
                       <td>{course.course_id}</td>
                       <td>{course.title}</td>
-                      {/* --- THIS IS NOW CORRECTED --- */}
                       <td>{course.duration}</td>
                       <td>
                         <div className="table-actions">

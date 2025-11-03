@@ -152,7 +152,7 @@ const EnrollmentPage = () => {
                   enrollments.map((enr, idx) => (
                     // Use enrollment_id from backend as key
                     <tr key={enr.enrollment_id || idx}>
-                      <td>{students.find(s => s.student_id === enr.student_id)?.name || enr.student_id}</td>
+                      <td>{students.find(s => s.student_id === enr.student_id)?.first_name || enr.student_id}</td>
                       <td>{courses.find(c => c.course_id === enr.course_id)?.title || enr.course_id}</td>
                       <td><span className="badge badge-primary">{enr.sec_id}</span></td>
                       <td><span className="badge badge-success">{enr.semester}</span></td>
@@ -331,7 +331,7 @@ const EnrollmentPage = () => {
               <option value="">Select Student</option>
               {students.map((s) => (
                 <option key={s.student_id} value={s.student_id}>
-                  {s.student_id} - {s.name}
+                  {s.student_id} - {s.first_name}
                 </option>
               ))}
             </select>

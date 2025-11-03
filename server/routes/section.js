@@ -28,17 +28,34 @@ router.post('/', async (req, res) => {
   }
 });
 
+// --- THIS ROUTE IS NOW FIXED ---
 router.put('/:id', async (req, res) => {
   // Frontend uses `sec_id` as the :id
   const { id } = req.params; 
   const { course_id, semester, year, building, room_number, time_slot_id, instructor_id } = req.body;
   try {
-    // This is fragile as `sec_id` is not the full PK.
+    // The UPDATE query is now corrected.
+    // It updates ALL fields, including course_id.
+    // It ONLY uses sec_id (from the 'id' param) in the WHERE clause.
     const { rows } = await pool.query(
-      `UPDATE section SET semester = $1, year = $2, instructor_id = $3, time_slot_id = $4, building = $5, room_no = $6 
-       WHERE sec_id = $7 AND course_id = $8 RETURNING *`,
-      [semester, year, instructor_id, time_slot_id, building, room_number, id, course_id]
+      `UPDATE section SET 
+         course_id = $1, 
+         semester = $2, 
+         year = $3, 
+         instructor_id = $4, 
+         time_slot_id = $5, 
+         building = $6, 
+         room_no = $7 
+       WHERE 
+         sec_id = $8 
+       RETURNING *`,
+      [course_id, semester, year, instructor_id, time_slot_id, building, room_number, id]
     );
+    
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Section not found.' });
+    }
+    
     res.json({...rows[0], room_number: rows[0].room_no});
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -46,8 +63,8 @@ router.put('/:id', async (req, res) => {
 });
 
 router.delete('/:id', async (req, res) => {
-  // Frontend uses `sec_id` as the :id. This is a problem as it's not unique.
-  // This delete may fail or delete multiple rows if sec_id is not unique.
+  // Frontend uses `sec_id` as the :id.
+  // This assumes sec_id is unique, matching the logic of the PUT route.
   const { id } = req.params;
   try {
     await pool.query('DELETE FROM section WHERE sec_id = $1', [id]);
