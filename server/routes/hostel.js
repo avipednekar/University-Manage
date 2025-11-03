@@ -1,14 +1,22 @@
 import express from 'express';
-import pool from '../db/db.js';
+import pool from '../db/db.js'; // Make sure this path is correct
 const router = express.Router();
 
+// GET all hostels
 router.get('/', async (req, res) => {
   try {
-    // Alias columns to match frontend expectations
+    // Select all raw fields + the aliased fields for frontend compatibility
     const { rows } = await pool.query(
-      `SELECT hostel_id, hostel_name, 
-              (address || ', ' || city || ', ' || state || ' - ' || pincode) as location, 
-              NumberOfSeats as capacity 
+      `SELECT 
+         hostel_id, 
+         hostel_name, 
+         address, 
+         city, 
+         state, 
+         pincode, 
+         NumberOfSeats,
+         (address || ', ' || city || ', ' || state || ' - ' || pincode) as location, 
+         NumberOfSeats as capacity 
        FROM Hostel`
     );
     res.json(rows);
@@ -17,37 +25,55 @@ router.get('/', async (req, res) => {
   }
 });
 
+// CREATE a new hostel
 router.post('/', async (req, res) => {
-  // Map frontend fields to schema
-  const { hostel_name, location, capacity } = req.body;
+  // Expect all fields from the new frontend form
+  const { hostel_id, hostel_name, address, city, state, pincode, NumberOfSeats } = req.body;
   try {
-    // We assume 'location' maps to 'address' and 'capacity' to 'NumberOfSeats'.
-    // Other address fields are set to NULL.
     const { rows } = await pool.query(
-      'INSERT INTO Hostel (hostel_id, hostel_name, address, capacity) VALUES (DEFAULT, $1, $2, $3) RETURNING *',
-      [hostel_name, location, capacity]
+      `INSERT INTO Hostel (hostel_id, hostel_name, address, city, state, pincode, NumberOfSeats) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7) 
+       RETURNING *`,
+      [hostel_id, hostel_name, address, city, state, pincode, NumberOfSeats]
     );
-    res.status(201).json(rows[0]);
+    // Return aliased data for consistency
+    const row = rows[0];
+    res.status(201).json({
+        ...row,
+        location: (row.address || ''),
+        capacity: row.numberofseats
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
+// UPDATE a hostel
 router.put('/:id', async (req, res) => {
   const { id } = req.params;
-  const { hostel_name, location, capacity } = req.body;
+  // Expect all fields from the new frontend form
+  const { hostel_name, address, city, state, pincode, NumberOfSeats } = req.body;
   try {
-    // Map fields for update
     const { rows } = await pool.query(
-      'UPDATE Hostel SET hostel_name = $1, address = $2, NumberOfSeats = $3 WHERE hostel_id = $4 RETURNING *',
-      [hostel_name, location, capacity, id]
+      `UPDATE Hostel 
+       SET hostel_name = $1, address = $2, city = $3, state = $4, pincode = $5, NumberOfSeats = $6 
+       WHERE hostel_id = $7 
+       RETURNING *`,
+      [hostel_name, address, city, state, pincode, NumberOfSeats, id]
     );
-    res.json(rows[0]);
+    // Return aliased data
+    const row = rows[0];
+    res.json({
+        ...row,
+        location: (row.address || ''),
+        capacity: row.numberofseats
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
+// DELETE a hostel (no change needed)
 router.delete('/:id', async (req, res) => {
   const { id } = req.params;
   try {

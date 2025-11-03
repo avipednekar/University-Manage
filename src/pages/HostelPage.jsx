@@ -3,6 +3,17 @@ import { hostelAPI, roomAPI } from '../api/api';
 import Modal from '../components/Common/Modal';
 import { FaPlus, FaEdit, FaTrash, FaHotel, FaDoorOpen } from 'react-icons/fa';
 
+// Define the initial state for the new, complex form
+const initialHostelFormState = {
+  hostel_id: '',
+  hostel_name: '',
+  address: '',
+  city: '',
+  state: '',
+  pincode: '',
+  NumberOfSeats: ''
+};
+
 const HostelPage = () => {
   const [hostels, setHostels] = useState([]);
   const [rooms, setRooms] = useState([]);
@@ -11,8 +22,10 @@ const HostelPage = () => {
   const [showRoomModal, setShowRoomModal] = useState(false);
   const [editingHostel, setEditingHostel] = useState(null);
   const [editingRoom, setEditingRoom] = useState(null);
-  const [hostelForm, setHostelForm] = useState({ hostel_name: '', location: '', capacity: '' });
-  // Removed capacity from roomForm state
+  
+  // Use the new initial state
+  const [hostelForm, setHostelForm] = useState(initialHostelFormState);
+  
   const [roomForm, setRoomForm] = useState({ room_number: '', hostel_id: '', room_type: '' });
   const [activeTab, setActiveTab] = useState('hostels');
 
@@ -26,6 +39,9 @@ const HostelPage = () => {
         hostelAPI.getAll(),
         roomAPI.getAll()
       ]);
+      // The backend GET route now provides *both* aliased and raw data.
+      // The table will use `location` and `capacity`.
+      // The edit modal will use the new raw fields.
       setHostels(hostelsRes.data);
       setRooms(roomsRes.data);
     } catch (error) {
@@ -38,6 +54,7 @@ const HostelPage = () => {
   const handleHostelSubmit = async (e) => {
     e.preventDefault();
     try {
+      // The backend POST/PUT routes now expect the full object
       if (editingHostel) {
         await hostelAPI.update(editingHostel.hostel_id, hostelForm);
       } else {
@@ -55,7 +72,6 @@ const HostelPage = () => {
     e.preventDefault();
     try {
       if (editingRoom) {
-        // editingRoom.room_id is the synthetic key 'hostel_id-room_number'
         await roomAPI.update(editingRoom.room_id, roomForm);
       } else {
         await roomAPI.create(roomForm);
@@ -83,7 +99,6 @@ const HostelPage = () => {
   const handleDeleteRoom = async (id) => {
     if (window.confirm('Are you sure you want to delete this room?')) {
       try {
-        // `id` is the synthetic key 'hostel_id-room_number'
         await roomAPI.delete(id);
         fetchData();
       } catch (error) {
@@ -95,10 +110,16 @@ const HostelPage = () => {
 
   const handleEditHostel = (hostel) => {
     setEditingHostel(hostel);
+    // Populate the new complex form.
+    // The `GET /hostels` route now provides all these fields.
     setHostelForm({ 
-      hostel_name: hostel.hostel_name, 
-      location: hostel.location, 
-      capacity: hostel.capacity 
+      hostel_id: hostel.hostel_id,
+      hostel_name: hostel.hostel_name,
+      address: hostel.address || '',
+      city: hostel.city || '',
+      state: hostel.state || '',
+      pincode: hostel.pincode || '',
+      NumberOfSeats: hostel.numberofseats // Use the raw DB column name
     });
     setShowHostelModal(true);
   };
@@ -109,7 +130,6 @@ const HostelPage = () => {
       room_number: room.room_number, 
       hostel_id: room.hostel_id, 
       room_type: room.room_type, 
-      // capacity: room.capacity // Removed
     });
     setShowRoomModal(true);
   };
@@ -117,13 +137,12 @@ const HostelPage = () => {
   const handleCloseHostelModal = () => {
     setShowHostelModal(false);
     setEditingHostel(null);
-    setHostelForm({ hostel_name: '', location: '', capacity: '' });
+    setHostelForm(initialHostelFormState); // Reset to the new initial state
   };
 
   const handleCloseRoomModal = () => {
     setShowRoomModal(false);
     setEditingRoom(null);
-    // Removed capacity
     setRoomForm({ room_number: '', hostel_id: '', room_type: '' });
   };
 
@@ -136,6 +155,7 @@ const HostelPage = () => {
         <p className="page-description">Manage hostels and their rooms</p>
       </div>
 
+      {/* Tabs remain the same */}
       <div style={{ marginBottom: '20px', borderBottom: '2px solid #e2e8f0' }}>
         <button 
           onClick={() => setActiveTab('hostels')}
@@ -183,6 +203,7 @@ const HostelPage = () => {
             <table className="table">
               <thead>
                 <tr>
+                  <th>Hostel ID</th>
                   <th>Hostel Name</th>
                   <th>Location</th>
                   <th>Capacity</th>
@@ -192,15 +213,18 @@ const HostelPage = () => {
               <tbody>
                 {hostels.length === 0 ? (
                   <tr>
-                    <td colSpan="4" style={{ textAlign: 'center', padding: '40px' }}>
+                    <td colSpan="5" style={{ textAlign: 'center', padding: '40px' }}>
                       No hostels found. Add your first hostel!
                     </td>
                   </tr>
                 ) : (
                   hostels.map((hostel) => (
                     <tr key={hostel.hostel_id}>
+                      <td>{hostel.hostel_id}</td>
                       <td>{hostel.hostel_name}</td>
+                      {/* This uses the aliased 'location' field from the GET route */}
                       <td>{hostel.location}</td>
+                      {/* This uses the aliased 'capacity' field */}
                       <td>{hostel.capacity}</td>
                       <td>
                         <div className="table-actions">
@@ -221,6 +245,7 @@ const HostelPage = () => {
         </div>
       )}
 
+      {/* Room tab remains the same */}
       {activeTab === 'rooms' && (
         <div className="card">
           <div className="card-header">
@@ -237,25 +262,22 @@ const HostelPage = () => {
                   <th>Room Number</th>
                   <th>Hostel</th>
                   <th>Room Type</th>
-                  {/* <th>Capacity</th> Removed */}
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {rooms.length === 0 ? (
                   <tr>
-                    <td colSpan="4" style={{ textAlign: 'center', padding: '40px' }}> {/* Adjusted colSpan */}
+                    <td colSpan="4" style={{ textAlign: 'center', padding: '40px' }}>
                       No rooms found. Add your first room!
                     </td>
                   </tr>
                 ) : (
                   rooms.map((room) => (
-                    // room.room_id is now the synthetic key 'hostel_id-room_number'
                     <tr key={room.room_id}>
                       <td>{room.room_number}</td>
                       <td>{hostels.find(h => h.hostel_id === room.hostel_id)?.hostel_name || 'N/A'}</td>
                       <td><span className="badge badge-primary">{room.room_type}</span></td>
-                      {/* <td>{room.capacity}</td> Removed */}
                       <td>
                         <div className="table-actions">
                           <button className="btn btn-sm btn-primary" onClick={() => handleEditRoom(room)}>
@@ -275,7 +297,8 @@ const HostelPage = () => {
         </div>
       )}
 
-      {/* Hostel Modal - Unchanged */}
+
+      {/* --- HOSTEL MODAL (UPDATED) --- */}
       <Modal
         isOpen={showHostelModal}
         onClose={handleCloseHostelModal}
@@ -290,40 +313,88 @@ const HostelPage = () => {
         }
       >
         <form onSubmit={handleHostelSubmit}>
+          {/* Grid for ID and Name */}
+          <div className="grid-2">
+            <div className="form-group">
+              <label className="form-label required">Hostel ID</label>
+              <input
+                type="number"
+                className="form-input"
+                value={hostelForm.hostel_id}
+                onChange={(e) => setHostelForm({ ...hostelForm, hostel_id: e.target.value })}
+                required
+                disabled={editingHostel}
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label required">Hostel Name</label>
+              <input
+                type="text"
+                className="form-input"
+                value={hostelForm.hostel_name}
+                onChange={(e) => setHostelForm({ ...hostelForm, hostel_name: e.target.value })}
+                required
+              />
+            </div>
+          </div>
+
+          {/* Address Field */}
           <div className="form-group">
-            <label className="form-label required">Hostel Name</label>
+            <label className="form-label">Address</label>
             <input
               type="text"
               className="form-input"
-              value={hostelForm.hostel_name}
-              onChange={(e) => setHostelForm({ ...hostelForm, hostel_name: e.target.value })}
-              required
+              value={hostelForm.address}
+              onChange={(e) => setHostelForm({ ...hostelForm, address: e.target.value })}
             />
           </div>
-          <div className="form-group">
-            <label className="form-label required">Location</label>
-            <input
-              type="text"
-              className="form-input"
-              value={hostelForm.location}
-              onChange={(e) => setHostelForm({ ...hostelForm, location: e.target.value })}
-              required
-            />
+
+          {/* Grid for City, State, Pincode */}
+          <div className="grid-3">
+            <div className="form-group">
+              <label className="form-label">City</label>
+              <input
+                type="text"
+                className="form-input"
+                value={hostelForm.city}
+                onChange={(e) => setHostelForm({ ...hostelForm, city: e.target.value })}
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">State</label>
+              <input
+                type="text"
+                className="form-input"
+                value={hostelForm.state}
+                onChange={(e) => setHostelForm({ ...hostelForm, state: e.target.value })}
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Pincode</label>
+              <input
+                type="number"
+                className="form-input"
+                value={hostelForm.pincode}
+                onChange={(e) => setHostelForm({ ...hostelForm, pincode: e.target.value })}
+              />
+            </div>
           </div>
+
+          {/* Number of Seats (Capacity) */}
           <div className="form-group">
-            <label className="form-label required">Capacity</label>
+            <label className="form-label required">Number of Seats</label>
             <input
               type="number"
               className="form-input"
-              value={hostelForm.capacity}
-              onChange={(e) => setHostelForm({ ...hostelForm, capacity: e.target.value })}
+              value={hostelForm.NumberOfSeats}
+              onChange={(e) => setHostelForm({ ...hostelForm, NumberOfSeats: e.target.value })}
               required
             />
           </div>
         </form>
       </Modal>
 
-      {/* Room Modal */}
+      {/* --- ROOM MODAL (Unchanged) --- */}
       <Modal
         isOpen={showRoomModal}
         onClose={handleCloseRoomModal}
@@ -379,18 +450,6 @@ const HostelPage = () => {
               <option value="Quad">Quad</option>
             </select>
           </div>
-          {/* <div className="form-group">
-            <label className="form-label required">Capacity</label>
-            <input
-              type="number"
-              className="form-input"
-              value={roomForm.capacity}
-              onChange={(e) => setRoomForm({ ...roomForm, capacity: e.target.value })}
-              required
-              min="1"
-              max="4"
-            />
-          </div> Removed */}
         </form>
       </Modal>
     </div>

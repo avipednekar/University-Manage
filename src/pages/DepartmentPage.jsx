@@ -105,7 +105,11 @@ const DepartmentPage = () => {
                   <tr key={dept.dept_name}>
                     <td>{dept.dept_name}</td>
                     <td>{dept.building}</td>
-                    <td>${dept.budget?.toLocaleString()}</td>
+                    <td>
+                      {dept.budget != null
+                        ? new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(dept.budget)
+                        : '-'}
+                    </td>
                     <td>
                       <div className="table-actions">
                         <button className="btn btn-sm btn-primary" onClick={() => handleEdit(dept)}>

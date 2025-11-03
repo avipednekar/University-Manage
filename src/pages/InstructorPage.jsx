@@ -191,7 +191,11 @@ const InstructorPage = () => {
                       <td>{instructor.instructor_id}</td>
                       <td>{instructor.name}</td>
                       <td><span className="badge badge-primary">{instructor.dept_name}</span></td>
-                      <td>${instructor.salary?.toLocaleString()}</td>
+                      <td>
+                        {instructor.salary != null
+                          ? new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(instructor.salary)
+                          : '-'}
+                      </td>
                       <td>
                         <div className="table-actions">
                           <button className="btn btn-sm btn-primary" onClick={() => handleEditInstructor(instructor)}>

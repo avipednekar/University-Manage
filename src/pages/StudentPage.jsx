@@ -12,11 +12,15 @@ const StudentPage = () => {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
+  
+  // Updated formData state to match new schema
   const [formData, setFormData] = useState({
     student_id: '',
-    name: '',
+    first_name: '', // Changed from name
+    last_name: '',  // Added
+    phone_num: '',  // Added
+    DOB: '',        // Added
     dept_name: '',
-    // tot_cred: '', // Removed: Not in new schema
     hostel_id: '',
     room_id: ''
   });
@@ -27,7 +31,6 @@ const StudentPage = () => {
 
   useEffect(() => {
     if (formData.hostel_id) {
-      // This logic remains valid as backend route provides hostel_id
       const filtered = rooms.filter(room => room.hostel_id === parseInt(formData.hostel_id));
       setFilteredRooms(filtered);
     } else {
@@ -86,23 +89,28 @@ const StudentPage = () => {
     setEditingStudent(student);
     setFormData({
       student_id: student.student_id,
-      name: student.name,
+      first_name: student.first_name, // Changed
+      last_name: student.last_name,   // Changed
+      phone_num: student.phone_num || '',   // Added
+      DOB: student.dob ? student.dob.split('T')[0] : '', // Added (and formatted date)
       dept_name: student.dept_name,
-      // tot_cred: student.tot_cred, // Removed
       hostel_id: student.hostel_id || '',
-      room_id: student.room_id || '' // This is now the synthetic key 'hostel_id-room_number'
+      room_id: student.room_id || '' // This is the synthetic key 'hostel_id-room_number'
     });
     setShowModal(true);
   };
 
+  // Reset state to new schema
   const handleCloseModal = () => {
     setShowModal(false);
     setEditingStudent(null);
     setFormData({
       student_id: '',
-      name: '',
+      first_name: '',
+      last_name: '',
+      phone_num: '',
+      DOB: '',
       dept_name: '',
-      // tot_cred: '', // Removed
       hostel_id: '',
       room_id: ''
     });
@@ -130,9 +138,10 @@ const StudentPage = () => {
             <thead>
               <tr>
                 <th>Student ID</th>
-                <th>Name</th>
+                <th>First Name</th>
+                <th>Last Name</th>
+                <th>Phone</th>
                 <th>Department</th>
-                {/* <th>Credits</th> Removed */}
                 <th>Hostel</th>
                 <th>Room</th>
                 <th>Actions</th>
@@ -141,7 +150,7 @@ const StudentPage = () => {
             <tbody>
               {students.length === 0 ? (
                 <tr>
-                  <td colSpan="6" style={{ textAlign: 'center', padding: '40px' }}> {/* Adjusted colSpan */}
+                  <td colSpan="8" style={{ textAlign: 'center', padding: '40px' }}>
                     No students found. Add your first student!
                   </td>
                 </tr>
@@ -149,11 +158,11 @@ const StudentPage = () => {
                 students.map((student) => (
                   <tr key={student.student_id}>
                     <td>{student.student_id}</td>
-                    <td>{student.name}</td>
+                    <td>{student.first_name}</td>
+                    <td>{student.last_name}</td>
+                    <td>{student.phone_num}</td>
                     <td><span className="badge badge-primary">{student.dept_name}</span></td>
-                    {/* <td>{student.tot_cred}</td> Removed */}
                     <td>{hostels.find(h => h.hostel_id === student.hostel_id)?.hostel_name || '-'}</td>
-                    {/* Backend now provides synthetic room_id, this find will work */}
                     <td>{rooms.find(r => r.room_id === student.room_id)?.room_number || '-'}</td>
                     <td>
                       <div className="table-actions">
@@ -191,7 +200,7 @@ const StudentPage = () => {
             <div className="form-group">
               <label className="form-label required">Student ID</label>
               <input
-                type="number" // Changed to number to match new schema (student_ID INT)
+                type="number"
                 className="form-input"
                 value={formData.student_id}
                 onChange={(e) => setFormData({ ...formData, student_id: e.target.value })}
@@ -199,19 +208,28 @@ const StudentPage = () => {
                 disabled={editingStudent}
               />
             </div>
-            <div className="form-group">
-              <label className="form-label required">Name</label>
+             <div className="form-group">
+              <label className="form-label required">First Name</label> {/* Changed */}
               <input
                 type="text"
                 className="form-input"
-                value={formData.name} // This will map to first_name on backend
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                value={formData.first_name} 
+                onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
                 required
               />
             </div>
           </div>
 
-          <div className="grid-2">
+           <div className="grid-2">
+            <div className="form-group">
+              <label className="form-label">Last Name</label> {/* Added */}
+              <input
+                type="text"
+                className="form-input"
+                value={formData.last_name}
+                onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+              />
+            </div>
             <div className="form-group">
               <label className="form-label required">Department</label>
               <select
@@ -228,17 +246,27 @@ const StudentPage = () => {
                 ))}
               </select>
             </div>
-            {/* <div className="form-group">
-              <label className="form-label required">Total Credits</label>
+          </div>
+
+          <div className="grid-2">
+             <div className="form-group">
+              <label className="form-label">Phone Number</label> {/* Added */}
               <input
-                type="number"
+                type="tel"
                 className="form-input"
-                value={formData.tot_cred}
-                onChange={(e) => setFormData({ ...formData, tot_cred: e.target.value })}
-                required
-                min="0"
+                value={formData.phone_num}
+                onChange={(e) => setFormData({ ...formData, phone_num: e.target.value })}
               />
-            </div> Removed */}
+            </div>
+             <div className="form-group">
+              <label className="form-label">Date of Birth</label> {/* Added */}
+              <input
+                type="date"
+                className="form-input"
+                value={formData.DOB}
+                onChange={(e) => setFormData({ ...formData, DOB: e.target.value })}
+              />
+            </div>
           </div>
 
           <div className="grid-2">
@@ -261,13 +289,13 @@ const StudentPage = () => {
               <label className="form-label">Room</label>
               <select
                 className="form-select"
-                value={formData.room_id} // This is now the synthetic key 'hostel_id-room_number'
+                value={formData.room_id} // This is the synthetic key 'hostel_id-room_number'
                 onChange={(e) => setFormData({ ...formData, room_id: e.target.value })}
                 disabled={!formData.hostel_id}
               >
                 <option value="">Select Room (Optional)</option>
                 {filteredRooms.map((room) => (
-                  // room.room_id is now the synthetic key
+                  // room.room_id is the synthetic key from the rooms API
                   <option key={room.room_id} value={room.room_id}>
                     {room.room_number} ({room.room_type})
                   </option>

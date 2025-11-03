@@ -5,9 +5,9 @@ const router = express.Router();
 router.get('/', async (req, res) => {
   try {
     // Alias columns for frontend
+    // Frontend expects 'course.duration', so we send 'duration'
     const { rows } = await pool.query(
-      'SELECT CourseID as course_id, CourseName as title, Duration as credits FROM Courses'
-      // Aliasing Duration as credits so the frontend shows *something*
+      'SELECT CourseID as course_id, CourseName as title, Duration as duration FROM Courses'
     );
     res.json(rows);
   } catch (err) {
@@ -17,14 +17,19 @@ router.get('/', async (req, res) => {
 
 router.post('/', async (req, res) => {
   // Map frontend fields to schema
-  const { course_id, title } = req.body;
-  // `dept_name` and `credits` are ignored. `Duration` set to null.
+  // We now correctly read 'duration' from the request body
+  const { course_id, title, duration } = req.body;
   try {
     const { rows } = await pool.query(
-      'INSERT INTO Courses (CourseID, CourseName, Duration) VALUES ($1, $2, NULL) RETURNING *',
-      [course_id, title]
+      'INSERT INTO Courses (CourseID, CourseName, Duration) VALUES ($1, $2, $3) RETURNING *',
+      [course_id, title, duration || null] // Save the duration
     );
-    res.status(201).json({...rows[0], course_id: rows[0].courseid, title: rows[0].coursename});
+    res.status(201).json({
+      ...rows[0], 
+      course_id: rows[0].courseid, 
+      title: rows[0].coursename, 
+      duration: rows[0].duration 
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -32,14 +37,19 @@ router.post('/', async (req, res) => {
 
 router.put('/:id', async (req, res) => {
   const { id } = req.params; // This is CourseID
-  const { title } = req.body;
-  // `dept_name` and `credits` are ignored.
+  // We now correctly read 'duration' from the request body
+  const { title, duration } = req.body;
   try {
     const { rows } = await pool.query(
-      'UPDATE Courses SET CourseName = $1 WHERE CourseID = $2 RETURNING *',
-      [title, id]
+      'UPDATE Courses SET CourseName = $1, Duration = $2 WHERE CourseID = $3 RETURNING *',
+      [title, duration || null, id] // Update the duration
     );
-    res.json({...rows[0], course_id: rows[0].courseid, title: rows[0].coursename});
+    res.json({
+      ...rows[0], 
+      course_id: rows[0].courseid, 
+      title: rows[0].coursename, 
+      duration: rows[0].duration 
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
