@@ -12,7 +12,8 @@ const HostelPage = () => {
   const [editingHostel, setEditingHostel] = useState(null);
   const [editingRoom, setEditingRoom] = useState(null);
   const [hostelForm, setHostelForm] = useState({ hostel_name: '', location: '', capacity: '' });
-  const [roomForm, setRoomForm] = useState({ room_number: '', hostel_id: '', room_type: '', capacity: '' });
+  // Removed capacity from roomForm state
+  const [roomForm, setRoomForm] = useState({ room_number: '', hostel_id: '', room_type: '' });
   const [activeTab, setActiveTab] = useState('hostels');
 
   useEffect(() => {
@@ -54,6 +55,7 @@ const HostelPage = () => {
     e.preventDefault();
     try {
       if (editingRoom) {
+        // editingRoom.room_id is the synthetic key 'hostel_id-room_number'
         await roomAPI.update(editingRoom.room_id, roomForm);
       } else {
         await roomAPI.create(roomForm);
@@ -81,6 +83,7 @@ const HostelPage = () => {
   const handleDeleteRoom = async (id) => {
     if (window.confirm('Are you sure you want to delete this room?')) {
       try {
+        // `id` is the synthetic key 'hostel_id-room_number'
         await roomAPI.delete(id);
         fetchData();
       } catch (error) {
@@ -106,7 +109,7 @@ const HostelPage = () => {
       room_number: room.room_number, 
       hostel_id: room.hostel_id, 
       room_type: room.room_type, 
-      capacity: room.capacity 
+      // capacity: room.capacity // Removed
     });
     setShowRoomModal(true);
   };
@@ -120,7 +123,8 @@ const HostelPage = () => {
   const handleCloseRoomModal = () => {
     setShowRoomModal(false);
     setEditingRoom(null);
-    setRoomForm({ room_number: '', hostel_id: '', room_type: '', capacity: '' });
+    // Removed capacity
+    setRoomForm({ room_number: '', hostel_id: '', room_type: '' });
   };
 
   if (loading) return <div className="loading-container"><div className="spinner"></div></div>;
@@ -233,24 +237,25 @@ const HostelPage = () => {
                   <th>Room Number</th>
                   <th>Hostel</th>
                   <th>Room Type</th>
-                  <th>Capacity</th>
+                  {/* <th>Capacity</th> Removed */}
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {rooms.length === 0 ? (
                   <tr>
-                    <td colSpan="5" style={{ textAlign: 'center', padding: '40px' }}>
+                    <td colSpan="4" style={{ textAlign: 'center', padding: '40px' }}> {/* Adjusted colSpan */}
                       No rooms found. Add your first room!
                     </td>
                   </tr>
                 ) : (
                   rooms.map((room) => (
+                    // room.room_id is now the synthetic key 'hostel_id-room_number'
                     <tr key={room.room_id}>
                       <td>{room.room_number}</td>
                       <td>{hostels.find(h => h.hostel_id === room.hostel_id)?.hostel_name || 'N/A'}</td>
                       <td><span className="badge badge-primary">{room.room_type}</span></td>
-                      <td>{room.capacity}</td>
+                      {/* <td>{room.capacity}</td> Removed */}
                       <td>
                         <div className="table-actions">
                           <button className="btn btn-sm btn-primary" onClick={() => handleEditRoom(room)}>
@@ -270,7 +275,7 @@ const HostelPage = () => {
         </div>
       )}
 
-      {/* Hostel Modal */}
+      {/* Hostel Modal - Unchanged */}
       <Modal
         isOpen={showHostelModal}
         onClose={handleCloseHostelModal}
@@ -374,7 +379,7 @@ const HostelPage = () => {
               <option value="Quad">Quad</option>
             </select>
           </div>
-          <div className="form-group">
+          {/* <div className="form-group">
             <label className="form-label required">Capacity</label>
             <input
               type="number"
@@ -385,7 +390,7 @@ const HostelPage = () => {
               min="1"
               max="4"
             />
-          </div>
+          </div> Removed */}
         </form>
       </Modal>
     </div>

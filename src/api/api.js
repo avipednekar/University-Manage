@@ -96,4 +96,8 @@ export const examStudentAPI = {
   delete: (examId, studentId) => api.delete(`/exam-students/${examId}/${studentId}`)
 };
 
+export const statsAPI = {
+  getStats: () => api.get('/stats')
+};
+
 export default api;

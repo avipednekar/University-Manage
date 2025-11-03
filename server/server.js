@@ -15,6 +15,7 @@ import timeSlotRoutes from './routes/timeslot.js';
 import examRoutes from './routes/exam.js';
 import enrollmentRoutes from './routes/enrollment.js';
 import examStudentRoutes from './routes/examStudent.js';
+import statsRoutes from './routes/stats.js';
 
 const app = express();
 const PORT = 5000; 
@@ -41,6 +42,7 @@ app.use('/api/timeslots', timeSlotRoutes);
 app.use('/api/exams', examRoutes);
 app.use('/api/enrollments', enrollmentRoutes);
 app.use('/api/exam-students', examStudentRoutes);
+app.use('/api/stats', statsRoutes);
 
 // Start server
 app.listen(PORT, () => {

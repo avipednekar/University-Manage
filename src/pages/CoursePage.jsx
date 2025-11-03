@@ -15,8 +15,9 @@ const CoursePage = () => {
   const [showSectionModal, setShowSectionModal] = useState(false);
   const [editingCourse, setEditingCourse] = useState(null);
   const [editingSection, setEditingSection] = useState(null);
+  // Updated state to match Courses table
   const [courseForm, setCourseForm] = useState({ 
-    course_id: '', title: '', dept_name: '', credits: '' 
+    course_id: '', title: '', duration: '' // Replaced dept_name and credits
   });
   const [sectionForm, setSectionForm] = useState({
     sec_id: '', course_id: '', semester: '', year: '', 
@@ -30,6 +31,8 @@ const CoursePage = () => {
 
   const fetchData = async () => {
     try {
+      // departmentAPI is no longer needed for courses, but sections might need it.
+      // Wait, sections get instructor, which has dept... so we keep it.
       const [coursesRes, sectionsRes, deptsRes, instructorsRes, classroomsRes, timeSlotsRes] = await Promise.all([
         courseAPI.getAll(),
         sectionAPI.getAll(),
@@ -54,10 +57,17 @@ const CoursePage = () => {
   const handleCourseSubmit = async (e) => {
     e.preventDefault();
     try {
+      // The backend route will map 'title' to 'CourseName' and 'duration' to 'Duration'
+      const dataToSend = {
+          course_id: courseForm.course_id,
+          title: courseForm.title,
+          credits: courseForm.duration // api.js expects 'credits', so we map 'duration' to it
+      }
+
       if (editingCourse) {
-        await courseAPI.update(editingCourse.course_id, courseForm);
+        await courseAPI.update(editingCourse.course_id, dataToSend);
       } else {
-        await courseAPI.create(courseForm);
+        await courseAPI.create(dataToSend);
       }
       fetchData();
       handleCloseCourseModal();
@@ -71,6 +81,7 @@ const CoursePage = () => {
     e.preventDefault();
     try {
       if (editingSection) {
+        // api.js sends `sec_id` as id. Our backend route for section is /:id
         await sectionAPI.update(editingSection.sec_id, sectionForm);
       } else {
         await sectionAPI.create(sectionForm);
@@ -98,6 +109,7 @@ const CoursePage = () => {
   const handleDeleteSection = async (id) => {
     if (window.confirm('Are you sure you want to delete this section?')) {
       try {
+        // `id` here is `section.sec_id`. This is what api.js expects.
         await sectionAPI.delete(id);
         fetchData();
       } catch (error) {
@@ -112,8 +124,8 @@ const CoursePage = () => {
     setCourseForm({
       course_id: course.course_id,
       title: course.title,
-      dept_name: course.dept_name,
-      credits: course.credits
+      // course.credits from backend is an alias for 'Duration'
+      duration: course.credits // Map 'credits' (Duration) back to 'duration'
     });
     setShowCourseModal(true);
   };
@@ -136,7 +148,7 @@ const CoursePage = () => {
   const handleCloseCourseModal = () => {
     setShowCourseModal(false);
     setEditingCourse(null);
-    setCourseForm({ course_id: '', title: '', dept_name: '', credits: '' });
+    setCourseForm({ course_id: '', title: '', duration: '' }); // Updated state
   };
 
   const handleCloseSectionModal = () => {
@@ -206,15 +218,15 @@ const CoursePage = () => {
                 <tr>
                   <th>Course ID</th>
                   <th>Title</th>
-                  <th>Department</th>
-                  <th>Credits</th>
+                  {/* <th>Department</th> Removed */}
+                  <th>Duration</th>{/* Renamed from Credits */}
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {courses.length === 0 ? (
                   <tr>
-                    <td colSpan="5" style={{ textAlign: 'center', padding: '40px' }}>
+                    <td colSpan="4" style={{ textAlign: 'center', padding: '40px' }}> {/* Adjusted colSpan */}
                       No courses found. Add your first course!
                     </td>
                   </tr>
@@ -223,8 +235,8 @@ const CoursePage = () => {
                     <tr key={course.course_id}>
                       <td>{course.course_id}</td>
                       <td>{course.title}</td>
-                      <td><span className="badge badge-primary">{course.dept_name}</span></td>
-                      <td>{course.credits}</td>
+                      {/* <td><span className="badge badge-primary">{course.dept_name}</span></td> Removed */}
+                      <td>{course.credits}</td>{/* This is now Duration from backend */}
                       <td>
                         <div className="table-actions">
                           <button className="btn btn-sm btn-primary" onClick={() => handleEditCourse(course)}>
@@ -245,6 +257,7 @@ const CoursePage = () => {
       )}
 
       {activeTab === 'sections' && (
+        // This tab remains unchanged as the backend route aliases fields correctly
         <div className="card">
           <div className="card-header">
             <h2 className="card-title">All Sections</h2>
@@ -275,7 +288,7 @@ const CoursePage = () => {
                   </tr>
                 ) : (
                   sections.map((section) => (
-                    <tr key={section.sec_id}>
+                    <tr key={`${section.course_id}-${section.sec_id}-${section.semester}-${section.year}`}> {/* Use composite key for React key */}
                       <td>{section.sec_id}</td>
                       <td>{courses.find(c => c.course_id === section.course_id)?.title || 'N/A'}</td>
                       <td><span className="badge badge-success">{section.semester}</span></td>
@@ -287,6 +300,7 @@ const CoursePage = () => {
                           <button className="btn btn-sm btn-primary" onClick={() => handleEditSection(section)}>
                             <FaEdit />
                           </button>
+                          {/* We pass sec_id as the ID, as expected by api.js */}
                           <button className="btn btn-sm btn-danger" onClick={() => handleDeleteSection(section.sec_id)}>
                             <FaTrash />
                           </button>
@@ -337,7 +351,7 @@ const CoursePage = () => {
               required
             />
           </div>
-          <div className="form-group">
+          {/* <div className="form-group">
             <label className="form-label required">Department</label>
             <select
               className="form-select"
@@ -352,23 +366,22 @@ const CoursePage = () => {
                 </option>
               ))}
             </select>
-          </div>
+          </div> Removed */}
           <div className="form-group">
-            <label className="form-label required">Credits</label>
+            <label className="form-label required">Duration</label> {/* Renamed from Credits */}
             <input
-              type="number"
+              type="text" // Changed from number
               className="form-input"
-              value={courseForm.credits}
-              onChange={(e) => setCourseForm({ ...courseForm, credits: e.target.value })}
+              value={courseForm.duration} // Changed from credits
+              onChange={(e) => setCourseForm({ ...courseForm, duration: e.target.value })} // Changed from credits
               required
-              min="1"
-              max="6"
             />
           </div>
         </form>
       </Modal>
 
       {/* Section Modal */}
+      {/* This modal remains unchanged, backend routes handle field mapping */}
       <Modal
         isOpen={showSectionModal}
         onClose={handleCloseSectionModal}

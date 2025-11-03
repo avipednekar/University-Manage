@@ -16,7 +16,8 @@ const ClassroomPage = () => {
   const [editingExam, setEditingExam] = useState(null);
   const [classroomForm, setClassroomForm] = useState({ building: '', room_number: '', capacity: '' });
   const [timeSlotForm, setTimeSlotForm] = useState({ time_slot_id: '', day: '', start_time: '', end_time: '' });
-  const [examForm, setExamForm] = useState({ exam_id: '', exam_name: '', exam_date: '', building: '', room_number: '' });
+  // Updated examForm state for new schema
+  const [examForm, setExamForm] = useState({ exam_id: '', exam_date: '', room_number: '' });
   const [activeTab, setActiveTab] = useState('classrooms');
 
   useEffect(() => {
@@ -77,6 +78,7 @@ const ClassroomPage = () => {
   const handleExamSubmit = async (e) => {
     e.preventDefault();
     try {
+      // api.js sends the full form. Backend will ignore exam_name and building.
       if (editingExam) {
         await examAPI.update(editingExam.exam_id, examForm);
       } else {
@@ -85,7 +87,8 @@ const ClassroomPage = () => {
       fetchData();
       setShowExamModal(false);
       setEditingExam(null);
-      setExamForm({ exam_id: '', exam_name: '', exam_date: '', building: '', room_number: '' });
+      // Reset to new state
+      setExamForm({ exam_id: '', exam_date: '', room_number: '' });
     } catch (error) {
       alert('Failed to save exam');
     }
@@ -161,6 +164,7 @@ const ClassroomPage = () => {
       </div>
 
       {activeTab === 'classrooms' && (
+        // This tab is unchanged
         <div className="card">
           <div className="card-header">
             <h2 className="card-title">All Classrooms</h2>
@@ -206,6 +210,7 @@ const ClassroomPage = () => {
       )}
 
       {activeTab === 'timeslots' && (
+        // This tab is unchanged
         <div className="card">
           <div className="card-header">
             <h2 className="card-title">All Time Slots</h2>
@@ -262,25 +267,36 @@ const ClassroomPage = () => {
           <div className="table-container">
             <table className="table">
               <thead>
-                <tr><th>Exam ID</th><th>Exam Name</th><th>Date</th><th>Classroom</th><th>Actions</th></tr>
+                <tr>
+                  <th>Exam ID</th>
+                  {/* <th>Exam Name</th> Removed, backend aliases ID to Name */}
+                  <th>Date</th>
+                  <th>Room Number</th>{/* Changed from Classroom */}
+                  <th>Actions</th>
+                </tr>
               </thead>
               <tbody>
                 {exams.length === 0 ? (
-                  <tr><td colSpan="5" style={{ textAlign: 'center', padding: '40px' }}>
+                  <tr><td colSpan="4" style={{ textAlign: 'center', padding: '40px' }}> {/* Adjusted colSpan */}
                     No exams found. Add your first exam!
                   </td></tr>
                 ) : (
                   exams.map((e) => (
                     <tr key={e.exam_id}>
                       <td>{e.exam_id}</td>
-                      <td>{e.exam_name}</td>
+                      {/* <td>{e.exam_name}</td> Backend aliases ID to name, showing both is redundant */}
                       <td>{e.exam_date}</td>
-                      <td>{e.building} {e.room_number}</td>
+                      <td>{e.room_number}</td>{/* Changed from {e.building} {e.room_number} */}
                       <td>
                         <div className="table-actions">
                           <button className="btn btn-sm btn-primary" onClick={() => {
                             setEditingExam(e);
-                            setExamForm(e);
+                            // Map existing data to new form state
+                            setExamForm({
+                                exam_id: e.exam_id,
+                                exam_date: e.exam_date,
+                                room_number: e.room_number
+                            });
                             setShowExamModal(true);
                           }}><FaEdit /></button>
                           <button className="btn btn-sm btn-danger" onClick={() => handleDeleteExam(e.exam_id)}>
@@ -297,7 +313,7 @@ const ClassroomPage = () => {
         </div>
       )}
 
-      {/* Modals */}
+      {/* Classroom Modal - Unchanged */}
       <Modal isOpen={showClassroomModal} onClose={() => { setShowClassroomModal(false); setEditingClassroom(null); setClassroomForm({ building: '', room_number: '', capacity: '' }); }}
         title={editingClassroom ? 'Edit Classroom' : 'Add Classroom'}
         footer={<><button className="btn" onClick={() => setShowClassroomModal(false)}>Cancel</button>
@@ -321,6 +337,7 @@ const ClassroomPage = () => {
         </form>
       </Modal>
 
+      {/* TimeSlot Modal - Unchanged */}
       <Modal isOpen={showTimeSlotModal} onClose={() => { setShowTimeSlotModal(false); setEditingTimeSlot(null); setTimeSlotForm({ time_slot_id: '', day: '', start_time: '', end_time: '' }); }}
         title={editingTimeSlot ? 'Edit Time Slot' : 'Add Time Slot'}
         footer={<><button className="btn" onClick={() => setShowTimeSlotModal(false)}>Cancel</button>
@@ -359,7 +376,8 @@ const ClassroomPage = () => {
         </form>
       </Modal>
 
-      <Modal isOpen={showExamModal} onClose={() => { setShowExamModal(false); setEditingExam(null); setExamForm({ exam_id: '', exam_name: '', exam_date: '', building: '', room_number: '' }); }}
+      {/* Exam Modal - HEAVILY MODIFIED */}
+      <Modal isOpen={showExamModal} onClose={() => { setShowExamModal(false); setEditingExam(null); setExamForm({ exam_id: '', exam_date: '', room_number: '' }); }}
         title={editingExam ? 'Edit Exam' : 'Add Exam'}
         footer={<><button className="btn" onClick={() => setShowExamModal(false)}>Cancel</button>
         <button className="btn btn-primary" onClick={handleExamSubmit}>{editingExam ? 'Update' : 'Create'}</button></>}>
@@ -369,30 +387,27 @@ const ClassroomPage = () => {
             <input type="text" className="form-input" value={examForm.exam_id}
               onChange={(e) => setExamForm({ ...examForm, exam_id: e.target.value })} required disabled={editingExam} />
           </div>
-          <div className="form-group">
+          {/* <div className="form-group">
             <label className="form-label required">Exam Name</label>
             <input type="text" className="form-input" value={examForm.exam_name}
               onChange={(e) => setExamForm({ ...examForm, exam_name: e.target.value })} required />
-          </div>
+          </div> Removed */}
           <div className="form-group">
             <label className="form-label required">Exam Date</label>
             <input type="date" className="form-input" value={examForm.exam_date}
               onChange={(e) => setExamForm({ ...examForm, exam_date: e.target.value })} required />
           </div>
           <div className="form-group">
-            <label className="form-label required">Classroom</label>
-            <select className="form-select" value={`${examForm.building}-${examForm.room_number}`}
-              onChange={(e) => {
-                const [building, room_number] = e.target.value.split('-');
-                setExamForm({ ...examForm, building, room_number });
-              }} required>
-              <option value="">Select Classroom</option>
-              {classrooms.map((c) => (
-                <option key={`${c.building}-${c.room_number}`} value={`${c.building}-${c.room_number}`}>
-                  {c.building} {c.room_number} (Cap: {c.capacity})
-                </option>
-              ))}
-            </select>
+            <label className="form-label required">Room Number</label>
+            {/* Changed from select to simple text input */}
+            <input
+              type="text"
+              className="form-input"
+              value={examForm.room_number}
+              onChange={(e) => setExamForm({ ...examForm, room_number: e.target.value })}
+              required
+              placeholder="Enter room number (e.g., 101)"
+            />
           </div>
         </form>
       </Modal>

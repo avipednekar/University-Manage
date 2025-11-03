@@ -16,7 +16,8 @@ const EnrollmentPage = () => {
   const [enrollmentForm, setEnrollmentForm] = useState({
     student_id: '', course_id: '', sec_id: '', semester: '', year: '', grade: ''
   });
-  const [examStudentForm, setExamStudentForm] = useState({ student_id: '', exam_id: '', marks: '' });
+  // Removed marks from state
+  const [examStudentForm, setExamStudentForm] = useState({ student_id: '', exam_id: '' });
   const [activeTab, setActiveTab] = useState('enrollments');
 
   useEffect(() => {
@@ -73,6 +74,7 @@ const EnrollmentPage = () => {
   const handleDeleteEnrollment = async (id) => {
     if (window.confirm('Delete this enrollment?')) {
       try {
+        // `id` is the synthetic key from the backend
         await enrollmentAPI.delete(id);
         fetchData();
       } catch (error) {
@@ -148,7 +150,8 @@ const EnrollmentPage = () => {
                   </td></tr>
                 ) : (
                   enrollments.map((enr, idx) => (
-                    <tr key={idx}>
+                    // Use enrollment_id from backend as key
+                    <tr key={enr.enrollment_id || idx}>
                       <td>{students.find(s => s.student_id === enr.student_id)?.name || enr.student_id}</td>
                       <td>{courses.find(c => c.course_id === enr.course_id)?.title || enr.course_id}</td>
                       <td><span className="badge badge-primary">{enr.sec_id}</span></td>
@@ -156,7 +159,8 @@ const EnrollmentPage = () => {
                       <td>{enr.year}</td>
                       <td>{enr.grade ? <span className="badge badge-warning">{enr.grade}</span> : '-'}</td>
                       <td>
-                        <button className="btn btn-sm btn-danger" onClick={() => handleDeleteEnrollment(enr.enrollment_id || idx)}>
+                        {/* Pass synthetic enrollment_id to delete func */}
+                        <button className="btn btn-sm btn-danger" onClick={() => handleDeleteEnrollment(enr.enrollment_id)}>
                           <FaTrash />
                         </button>
                       </td>
@@ -183,13 +187,13 @@ const EnrollmentPage = () => {
                 <tr>
                   <th>Student</th>
                   <th>Exam</th>
-                  <th>Marks</th>
+                  {/* <th>Marks</th> Removed */}
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {examStudents.length === 0 ? (
-                  <tr><td colSpan="4" style={{ textAlign: 'center', padding: '40px' }}>
+                  <tr><td colSpan="3" style={{ textAlign: 'center', padding: '40px' }}> {/* Adjusted colSpan */}
                     No exam registrations found. Register students for exams!
                   </td></tr>
                 ) : (
@@ -197,7 +201,7 @@ const EnrollmentPage = () => {
                     <tr key={idx}>
                       <td>{students.find(s => s.student_id === es.student_id)?.name || es.student_id}</td>
                       <td>{exams.find(e => e.exam_id === es.exam_id)?.exam_name || es.exam_id}</td>
-                      <td>{es.marks !== null && es.marks !== undefined ? <span className="badge badge-success">{es.marks}</span> : '-'}</td>
+                      {/* <td>{es.marks !== null && es.marks !== undefined ? <span className="badge badge-success">{es.marks}</span> : '-'}</td> Removed */}
                       <td>
                         <button className="btn btn-sm btn-danger" onClick={() => handleDeleteExamStudent(es.exam_id, es.student_id)}>
                           <FaTrash />
@@ -212,7 +216,7 @@ const EnrollmentPage = () => {
         </div>
       )}
 
-      {/* Enrollment Modal */}
+      {/* Enrollment Modal - Unchanged */}
       <Modal
         isOpen={showEnrollmentModal}
         onClose={() => {
@@ -260,7 +264,7 @@ const EnrollmentPage = () => {
               onChange={(e) => setEnrollmentForm({ ...enrollmentForm, sec_id: e.target.value })} required>
               <option value="">Select Section</option>
               {sections.filter(sec => sec.course_id === enrollmentForm.course_id).map((sec) => (
-                <option key={sec.sec_id} value={sec.sec_id}>
+                 <option key={`${sec.course_id}-${sec.sec_id}-${sec.semester}-${sec.year}`} value={sec.sec_id}>
                   {sec.sec_id} - {sec.semester} {sec.year}
                 </option>
               ))}
@@ -309,7 +313,7 @@ const EnrollmentPage = () => {
         isOpen={showExamStudentModal}
         onClose={() => {
           setShowExamStudentModal(false);
-          setExamStudentForm({ student_id: '', exam_id: '', marks: '' });
+          setExamStudentForm({ student_id: '', exam_id: '' }); // Removed marks
         }}
         title="Register Student for Exam"
         footer={
@@ -346,12 +350,12 @@ const EnrollmentPage = () => {
             </select>
           </div>
 
-          <div className="form-group">
+          {/* <div className="form-group">
             <label className="form-label">Marks (Optional)</label>
             <input type="number" className="form-input" value={examStudentForm.marks}
               onChange={(e) => setExamStudentForm({ ...examStudentForm, marks: e.target.value })}
               min="0" max="100" placeholder="Leave empty if not graded yet" />
-          </div>
+          </div> Removed */}
         </form>
       </Modal>
     </div>
